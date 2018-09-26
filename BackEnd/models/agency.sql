@@ -1,7 +1,5 @@
-DROP DATABASE IF EXISTS agencies;
-CREATE DATABASE agencies;
-
-\c agencies;
+DROP DATABASE IF EXISTS postgres;
+CREATE DATABASE postgres;
 
 CREATE TABLE agencies (
   ID SERIAL PRIMARY KEY,

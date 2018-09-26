@@ -22,11 +22,14 @@ if (unsetEnv.length > 0) {
 //                                 REQUIRES
 // =============================================================================
 const express = require('express'),
-    https = require('https'),
-    http = require('http'),
-    helmet = require('helmet'),
-    fs = require('fs');
+      https = require('https'),
+      http = require('http'),
+      helmet = require('helmet'),
+	    pg = require('pg'),
+	    database = require('./models/database.js')
+      fs = require('fs');
 
+// =============================================================================
 //  BASICS
 // =============================================================================
 const app = express();
@@ -34,27 +37,29 @@ const app = express();
 // General security best practice, disables x-powered-by and other standard things.
 app.use(helmet());
 
+// =============================================================================
 // DATA BASE SETUP
 // =============================================================================
 
 // build database connection string
-// no username and password being used
-const databaseConnection = process.env.DB_PROTOCOL + '://' + process.env.DB_HOST + ':' + process.env.DB_PORT + '/' + process.env.DB_NAME;
-
+const dbConnStr = process.env.DB_PROTOCOL + '://'+process.env.DB_USER+':'+process.env.DB_PASS +'@'+ process.env.DB_HOST + ':' + process.env.DB_PORT + '/' + process.env.DB_NAME;
+const client = new pg.Client(dbConnStr);
 //connect to database
-.connect(databaseConnection, { useMongoClient: true }, function(err) {
+client.connect(function(err){
     if (err) {
-        console.error('Connection to database error:', err);
+        console.log('Connection to database error:', err);
         return;
     }
-    // if no error connecting then flag is true
-    console.log('Successfully connected to Database');
-    console.log('starting the server');
     // start the server
     startTheServer(function(startFlag){
-        console.log('server started:', startFlag);
-    });
+        console.log('server started',startFlag);
+   });
+	// client.end()
+
 });
+
+// initialize tables
+database.setupDbTables();
 
 // ROUTES FOR API
 // =============================================================================
@@ -83,7 +88,7 @@ function startTheServer(callback){
     }
     // start server listening to port
     server.listen(port);
-    const startFlag = 'server started';
+    const startFlag = '';
     callback(startFlag);
 }
 
