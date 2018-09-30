@@ -43,23 +43,28 @@ app.use(helmet());
 
 // build database connection string
 const dbConnStr = process.env.DB_PROTOCOL + '://'+process.env.DB_USER+':'+process.env.DB_PASS +'@'+ process.env.DB_HOST + ':' + process.env.DB_PORT + '/' + process.env.DB_NAME;
+console.log('connection string: ',dbConnStr)
 const client = new pg.Client(dbConnStr);
-//connect to database
-client.connect(function(err){
-    if (err) {
-        console.log('Connection to database error:', err);
-        return;
-    }
+client
+  .connect()
+  .then(function(){
     // start the server
     startTheServer(function(startFlag){
-        console.log('server started',startFlag);
-   });
-	// client.end()
-
-});
-
-// initialize tables
-database.setupDbTables();
+      console.log('server started',startFlag);
+    });
+  })
+  .then(function(){
+    // initialize tables
+    database.setupDbTables();
+  })
+  .then(function(){
+    if (client){
+      return client.end();
+    }
+  })
+  .catch(function(err){
+    console.log('Connection to database error:', err);
+  });
 
 // ROUTES FOR API
 // =============================================================================
@@ -88,7 +93,7 @@ function startTheServer(callback){
     }
     // start server listening to port
     server.listen(port);
-    const startFlag = '';
+    const startFlag = 'true';
     callback(startFlag);
 }
 

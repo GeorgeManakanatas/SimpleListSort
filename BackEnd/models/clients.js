@@ -5,25 +5,43 @@ const express = require('express'),
 const dbConnStr = process.env.DB_PROTOCOL + '://'+process.env.DB_USER+':'+process.env.DB_PASS +'@'+ process.env.DB_HOST + ':' + process.env.DB_PORT + '/' + process.env.DB_NAME;
 
 // create client entry
-function createClient(inputJson,callback){
+function createClient(requestBody){
+	return new Promise(function(resolve,reject){
+		const client = new pg.Client(dbConnStr);
+		client
+			.connect()
+			.then(function(){
+				SQL = "INSERT INTO agencies(name, description, grade) VALUES ($1, $2, $3) RETURNING id";
+				vars = [requestBody.name.toString(), requestBody.description.toString(), requestBody.grade.toString()]
+				return client.query(SQL,(vars));
+			})
+			.then(function(result){
+				requestBody.id = result.rows[0].id;
+				resolve(requestBody);
+			},function(err){
+				reject(err);
+			})
+			.then(function(){
+				if (client){
+					return client.end();
+				}
+			})
+			.catch(function(err){
+				console.log('Error closing connection', err);
+			});
+	})
 
-	const client = new pg.Client(dbConnStr);
-	client.connect(function(err){
-		if (err) {
-		   callback(err,null);
-		}
-	});
+
 	//
-	SQL = "INSERT INTO agencies(name, description, grade) VALUES ($1, $2, $3) RETURNING id";
-	vars = [inputJson.name.toString(), inputJson.description.toString(), inputJson.grade.toString()]
+
 	// send to database
 	client.query(SQL,(vars),function(err,result){
         if (err) {
 			console.log('Connection to database error:', err);
 			callback(err,null);
 		} else {
-			inputJson.id = result.rows[0].id;
-			callback(null,inputJson);
+			requestBody.id = result.rows[0].id;
+
 		}
 	});
 };

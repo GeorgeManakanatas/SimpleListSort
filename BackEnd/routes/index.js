@@ -46,8 +46,8 @@ router.get('/all',
 );
 
 // get the entries by name
-// GET http://localhost:8081/name)
-router.get('/name',
+// GET http://localhost:8081/:name)
+router.get('/:name',
     function(req, res, next) {
 		res.status(200);
         res.json({'filter':'filter by name'});
@@ -57,7 +57,7 @@ router.get('/name',
 
 // get the entries by tag
 // GET http://localhost:8081/tags)
-router.get('/tags',
+router.get('/:tags',
     function(req, res, next) {
 		res.status(200);
 		res.json({'filter':'filter by tags'});
@@ -73,106 +73,73 @@ router.get('/tags',
 // POST http://localhost:8081/client)
 router.post('/client',
     function(req, res, next) {
-		console.log('!!!!!!!!!!!!!!!!!!1')
-		//
-    console.log('\n processNewEntryTags \n')
-  	inputTags = req.body.tags;
-  	var inputTagsArray = tagsModel.prepareIncommingTags(inputTags)
-  	var tagsTableArray = new Array ( );
-    //
-    // console.log('inputTagsArray  0  :   ',inputTagsArray)
-  	// console.log('tagsTableArray  0  :   ',tagsTableArray)
-		tagsModel.getAllTagsFromDb(inputTagsArray,tagsTableArray,function(err,tagsTableArray){
-      // console.log('inputTagsArray  1  :   ',inputTagsArray)
-  		// console.log('tagsTableArray  1  :   ',tagsTableArray)
-      const client = new pg.Client(dbConnStr);
-      client.connect(function(err){
-        if (err) {
-           console.log('error : ',err);
-           callback(err,null);
-        }
-      });
-      inputTagsArray.forEach(function(inputTagsArrayItem,index){
-        // console.log('the inputTagsArray is : ',inputTagsArray)
-    		if(!inputTagsArray[index][0]){
-    			// console.log('for i : ',i,' the inputTagsArray[index] is ',inputTagsArray[index])
-          console.log('\n insrtNewTagToDb \n')
-        	console.log('the inputTagsArray is : ',inputTagsArray)
-        	console.log('the i is : ',index)
-        	// connect to database
-
-        	SQL = "INSERT INTO tags(tagname) VALUES ($1) RETURNING id;";
-        	vars = [inputTagsArray[index][1]]
-        	// send to database
-        	client.query(SQL,(vars),function(err,result){
-        		if (err) {
-        			console.log('error : ',err);
-        			callback(err,null);
-        		} else { console.log('query ok');}
-        		inputTagsArray[index][0] = result.rows[0].id;
-        		console.log('the return value is : ',result.rows)
-        		console.log('the inputTagsArray is : ',inputTagsArray)
-        		// callback(null,inputTagsArray)
-        	});
-
-          // tagsModel.insrtNewTagToDb(inputTagsArray,index,function(err,inputTagsArray){
-    			// 	if(err){
-    			// 		console.log('error : ',err)
-    			// 	} else{
-    			// 		req.body.tags = inputTagsArray;
-    			// 	}
-          //   console.log('end is req.body : ',req.body)
-          //   next();
-    			// })
-    		}
-      })
+      // process the tags
+      inputTagsArray = tagsModel.createTagArray(req.body.tags)
+    	tagsModel.getTagsFromDb(inputTagsArray)
+        .then(function(result){
+            inputTagsArray.forEach(function(inputTagsArrayItem,index){
+              // if no id create entry for the tag
+              if(!inputTagsArray[index][0]){
+                tagsModel.insertNewTagToDb(inputTagsArray[index][1])
+                  .then(function(result){
+                    inputTagsArray[index][0] = result
+                    req.body.tags = inputTagsArray;
+                  })
+              } else {
+                req.body.tags = inputTagsArray;
+              }
+            })
+          })
+          .catch(function(err){
+    				console.log('Error ', err);
+    			})
+          .then(function(){
+            next()
+          })
+    },
+    function(req, res, next) {
+      // process the body
+      clientModel.createClient(req.body)
+        .then(function(result){
+          console.log('!!!!!!!!!',result)
+        })
+        .catch(function(err){
+          console.log('Error ', err);
+        })
+        .then(function(){
+          next();
+        })
+    },
+    function(req, res, next) {
       req.body.tags = inputTagsArray;
-      // next();
-		});// end of processNewEntryTags
-    next();
-	},
-  function(req, res, next) {
-    // save the rest of the body
-    console.log('!!!!!!!!!!!!!!!!!!2')
-    clientModel.createClient(data, function(err, result){
-      if (err) {
-        //res.status(500).send(err);
-         next();
-      } else if(!result){
-        //res.status(404).send('Error trying to save body to database');
-         next();
-      } else {
-        data.id = result.id;
-        console.log('--------------------------------->',data)
-        req.body.id = data.id;
+      // create associations
+      inputTagsArray.forEach(function(inputTagsArrayItem,index){
+        associationModel.createAssociationEntry(inputTagsArray[index][0],req.body.id)
+          .then(function(result){
+            console.log('association: ',inputTagsArray[index][0],req.body.id,' created')
+          })
+          .catch(function(err){
+            console.log('Error ', err);
+          })
+          .then(function(){
+            next();
+          })
+        })
+      },
+      function(req, res, next) {
+    		res.status(200);
+    		res.json(req.body);
         next();
-      };
-    });// end of createClient
-  }
-  // function(req, res, next) {
-  //   // create associations
-  //   console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!3')
-  //   associationModel.createAssociationEntries(data,function(err, result){
-  //     if (err) {
-  //       //res.status(500).send(err);
-  //        next();
-  //     } else if(!result){
-  //       //res.status(404).send('Error trying to save associations to database');
-  //        next();
-  //     } else {
-  //       res.status(200).send(result);
-  //     };
-  //   });// end of createAssociationEntries
-  // }
-);
+      });
+
 
 //==============================================================================
 // Delete
 //==============================================================================
 
 // delete an entry
-// DELETE http://localhost:8081/)
-router.delete('/',
+// DELETE http://localhost:8081/:name)
+router.delete('/:name',
     function(req, res, next) {
 
         next();

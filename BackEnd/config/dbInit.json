@@ -2,4 +2,5 @@
 "agenciesTable":"CREATE TABLE IF NOT EXISTS agencies (ID SERIAL PRIMARY KEY,name VARCHAR,description VARCHAR,grade VARCHAR);",
 "tagsTable":"CREATE TABLE IF NOT EXISTS tags (ID SERIAL PRIMARY KEY,tagname VARCHAR);",
 "associationTable":"CREATE TABLE IF NOT EXISTS association (ID SERIAL PRIMARY KEY,tagid INTEGER,agencyid INTEGER);"
+
 }
