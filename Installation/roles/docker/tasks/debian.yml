@@ -1,0 +1,42 @@
+---
+  - name: Install prerequisites
+    apt:
+      name:
+       - apt-transport-https
+       - ca-certificates
+       - curl
+       - software-properties-common
+      update_cache: yes
+    become: true
+    become_method: sudo
+    tags: ["docker","prerequisites"]
+
+  - name: Add Docker GPG key
+    apt_key: url=https://download.docker.com/linux/ubuntu/gpg
+    become: true
+    become_method: sudo
+    tags: ["docker","prerequisites"]
+
+  - name: Add Docker APT repository
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
+    become: true
+    become_method: sudo
+    tags: ["docker","prerequisites"]
+
+  - name:    Install Docker
+    apt:     name=docker-ce
+    become: true
+    become_method: sudo
+    tags: ["docker","prerequisites"]
+  
+  - name: Install python modules for Docker
+    pip: 
+      name:
+        - docker
+        - requests
+      state: present
+    become: true
+    become_method: sudo
+    tags: ["docker","prerequisites"]
+    

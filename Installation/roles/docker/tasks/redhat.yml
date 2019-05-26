@@ -1,0 +1,29 @@
+---
+  - name:    Install prerequisites
+    yum:     name={{item}} update_cache=yes
+    with_items:
+     - ca-certificates
+     - curl
+     - software-properties-common
+    become: true
+    become_method: sudo
+    tags: ["docker","prerequisites"]
+
+  - name:    Add Docker GPG key
+    yum: url=https://download.docker.com/linux/ubuntu/gpg
+    become: true
+    become_method: sudo
+    tags: ["docker","prerequisites"]
+
+  - name:    Add Docker APT repository
+    yum:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
+    become: true
+    become_method: sudo
+    tags: ["docker","prerequisites"]
+
+  - name:    Install Docker
+    yum:     name=docker-ce
+    become: true
+    become_method: sudo
+    tags: ["docker","prerequisites"]

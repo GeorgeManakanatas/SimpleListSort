@@ -1,5 +1,5 @@
 {
-  "name": "SortCompany",
+  "name": "SimpleList",
   "version": "0.0.1",
   "description": "Sort compamies by name or tag",
   "main": "app.js",
